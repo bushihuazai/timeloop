@@ -1,0 +1,169 @@
+@startuml Timeloop Execution Flow
+
+!theme plain
+skinparam sequenceMessageAlign center
+
+title Timeloop Mapper - Execution Flow Sequence
+
+actor User
+participant "Mapper\nApplication" as Mapper
+participant "Config\nParser" as Config
+participant "Search\nAlgorithm" as Search
+participant "MapSpace" as MapSpace
+participant "Engine" as Engine
+participant "Nest\nAnalysis" as Analysis
+participant "Output\nGenerator" as Output
+
+== Initialization ==
+
+User -> Mapper: Run with config files\n(arch, problem, mapper)
+activate Mapper
+
+Mapper -> Config: Parse configuration
+activate Config
+Config -> Config: Parse architecture spec
+Config -> Config: Parse workload spec
+Config -> Config: Parse mapper config
+Config -> Config: Parse constraints
+Config --> Mapper: Return parsed specs
+deactivate Config
+
+Mapper -> Engine: Initialize engine\nwith arch specs
+activate Engine
+Engine -> Engine: Build topology\n(levels, buffers, networks)
+Engine --> Mapper: Ready
+deactivate Engine
+
+Mapper -> MapSpace: Initialize mapspace\nwith constraints
+activate MapSpace
+MapSpace -> MapSpace: Compute mapspace size
+MapSpace -> MapSpace: Initialize iterators
+MapSpace --> Mapper: Ready
+deactivate MapSpace
+
+== Multi-threaded Search ==
+
+Mapper -> Mapper: Create N threads
+
+loop For each thread
+  Mapper -> Search: Spawn search thread
+  activate Search
+  
+  loop Until termination condition
+    Search -> MapSpace: Get next mapping
+    activate MapSpace
+    MapSpace -> MapSpace: Generate candidate\nmapping
+    MapSpace --> Search: Return mapping
+    deactivate MapSpace
+    
+    Search -> Engine: Evaluate mapping
+    activate Engine
+    
+    Engine -> Analysis: Analyze loop nest
+    activate Analysis
+    
+    Analysis -> Analysis: Compute tiling
+    Analysis -> Analysis: Temporal analysis
+    Analysis -> Analysis: Spatial analysis
+    Analysis -> Analysis: Compute data movement
+    Analysis -> Analysis: Compute energy
+    Analysis -> Analysis: Compute cycles
+    
+    Analysis --> Engine: Return metrics
+    deactivate Analysis
+    
+    alt Mapping is valid
+      Engine --> Search: Return stats\n(energy, cycles, etc.)
+      
+      Search -> Search: Compare with\nbest mapping
+      
+      alt Better than best
+        Search -> Search: Update best mapping
+        Search -> Search: Log new optimum
+      else Not better
+        Search -> Search: Increment\nsuboptimal counter
+      end
+      
+    else Mapping is invalid
+      Engine --> Search: Return failure
+      Search -> Search: Increment\ntimeout counter
+    end
+    
+    deactivate Engine
+    
+    alt Termination condition met
+      Search -> Search: Exit loop
+    end
+  end
+  
+  Search -> Mapper: Return thread results\n(best mapping, stats)
+  deactivate Search
+end
+
+== Result Collection ==
+
+Mapper -> Mapper: Collect results\nfrom all threads
+Mapper -> Mapper: Select global\nbest mapping
+
+Mapper -> Engine: Final evaluation\nof best mapping
+activate Engine
+Engine -> Analysis: Detailed analysis
+activate Analysis
+Analysis --> Engine: Complete stats
+deactivate Analysis
+Engine --> Mapper: Final results
+deactivate Engine
+
+== Output Generation ==
+
+Mapper -> Output: Generate outputs
+activate Output
+
+Output -> Output: Generate mapping\ndescription (YAML, C++)
+Output -> Output: Generate statistics\n(energy, cycles, accesses)
+Output -> Output: Generate Tensella\ncode (optional)
+Output -> Output: Generate visualization\n(optional)
+
+Output --> Mapper: Output strings
+deactivate Output
+
+Mapper --> User: Write output files
+deactivate Mapper
+
+User -> User: Review results
+
+note right of Search
+  **Termination Conditions:**
+  - timeout: N consecutive invalid mappings
+  - victory_condition: M consecutive suboptimal mappings
+  - search_size: Total valid mappings evaluated
+  
+  **Search Algorithms:**
+  - Exhaustive
+  - Random / Random Pruned
+  - Linear Pruned
+  - Hybrid (default)
+end note
+
+note right of Engine
+  **Evaluation Metrics:**
+  - Energy consumption
+  - Execution cycles
+  - Memory accesses
+  - Network transfers
+  - Hardware utilization
+  - Area (optional)
+end note
+
+note left of Analysis
+  **Analysis Steps:**
+  1. Tiling calculation
+  2. Temporal reuse analysis
+  3. Spatial distribution
+  4. Data movement quantification
+  5. Energy/performance modeling
+  6. ISL polyhedral analysis (optional)
+  7. Sparse optimization (optional)
+end note
+
+@enduml

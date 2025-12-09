@@ -19,6 +19,7 @@ PlantUML design diagrams describing the Timeloop architecture are available:
 - [Complete Architecture Diagram](design-architecture.puml) - Full component view
 - [Simplified Architecture Diagram](design-architecture-simplified.puml) - High-level data flow view
 - [Component Diagram](design-architecture-components.puml) - Class relationships view
+- [Execution Flow Diagram](design-execution-flow.puml) - Sequence diagram showing runtime execution
 
 Timeloop version 2.0 (a.k.a. Sparseloop) provides stochastic modeling of compressed-sparse tensor algebra. This work is described in our [MICRO 2022 paper](https://www.computer.org/csdl/proceedings-article/micro/2022/627200b377/1HMSE23T13a).
 
