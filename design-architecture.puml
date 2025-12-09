@@ -10,7 +10,7 @@
 
 title Timeloop - Tensor Algebra Accelerator Infrastructure\nDesign Framework
 
-package "Application Layer" <<Rectangle>> #APPLICATION_COLOR {
+package "Application Layer" <<Rectangle>> {
   [Mapper Application] as MapperApp
   [Model Application] as ModelApp
   [Metrics Application] as MetricsApp
@@ -24,7 +24,7 @@ package "Application Layer" <<Rectangle>> #APPLICATION_COLOR {
   end note
 }
 
-package "Workload Description" <<Rectangle>> #WORKLOAD_COLOR {
+package "Workload Description" <<Rectangle>> {
   [Workload] as Workload
   [ProblemShape] as ProblemShape
   [DataSpace] as DataSpace
@@ -44,7 +44,7 @@ package "Workload Description" <<Rectangle>> #WORKLOAD_COLOR {
   end note
 }
 
-package "Architecture Model" <<Rectangle>> #MODEL_COLOR {
+package "Architecture Model" <<Rectangle>> {
   [Engine] as Engine
   [Topology] as Topology
   
@@ -73,7 +73,7 @@ package "Architecture Model" <<Rectangle>> #MODEL_COLOR {
   end note
 }
 
-package "Mapping Representation" <<Rectangle>> #MAPPING_COLOR {
+package "Mapping Representation" <<Rectangle>> {
   [Mapping] as Mapping
   [Nest] as Nest
   [Loop] as Loop
@@ -90,7 +90,7 @@ package "Mapping Representation" <<Rectangle>> #MAPPING_COLOR {
   end note
 }
 
-package "Mapping Search" <<Rectangle>> #SEARCH_COLOR {
+package "Mapping Search" <<Rectangle>> {
   [SearchAlgorithm] as SearchAlgorithm
   [Exhaustive] as Exhaustive
   [Random] as Random
@@ -108,7 +108,7 @@ package "Mapping Search" <<Rectangle>> #SEARCH_COLOR {
   end note
 }
 
-package "Analysis and Evaluation" <<Rectangle>> #ANALYSIS_COLOR {
+package "Analysis and Evaluation" <<Rectangle>> {
   [NestAnalysis] as NestAnalysis
   [LoopAnalysis] as LoopAnalysis
   
@@ -140,7 +140,7 @@ package "Analysis and Evaluation" <<Rectangle>> #ANALYSIS_COLOR {
   end note
 }
 
-package "Support Libraries" <<Rectangle>> #COMPONENT_COLOR {
+package "Support Libraries" <<Rectangle>> {
   [CompoundConfig] as CompoundConfig
   [Layout] as Layout
   [EinsumGraph] as EinsumGraph
