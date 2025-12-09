@@ -236,7 +236,7 @@ Engine --> Layout : uses
 NestAnalysis --> Layout : considers
 
 ' Main Data Flow
-note bottom
+note as MainWorkflow
   **Main Workflow:**
   1. Define Workload (problem specification)
   2. Specify Architecture (hardware model)
