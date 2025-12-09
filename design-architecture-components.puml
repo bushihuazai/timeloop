@@ -1,0 +1,301 @@
+@startuml Timeloop Component Diagram
+
+!theme plain
+scale 1.2
+
+title Timeloop - Component and Class Relationships
+
+package "applications" {
+  class MapperApplication {
+    - workload_: Workload
+    - arch_specs_: Engine::Specs
+    - mapspace_: MapSpace*
+    - search_: SearchAlgorithm*
+    - num_threads_: uint32_t
+    + Run(): Result
+    + ParseConfig()
+  }
+  
+  class ModelApplication {
+    - workload_: Workload
+    - arch_specs_: Engine::Specs
+    - mapping_: Mapping*
+    - layout_: Layouts
+    + Run(): Stats
+    + EvaluateMapping()
+  }
+  
+  class MetricsApplication {
+    + CollectMetrics()
+    + GenerateReport()
+  }
+}
+
+package "model" {
+  class Engine {
+    - specs_: Specs
+    - topology_: Topology
+    - nest_analysis_: NestAnalysis
+    + ParseSpecs(): Specs
+    + Evaluate(): EvalStatus
+    + Energy(): double
+    + Cycles(): uint64_t
+    + Utilization(): double
+  }
+  
+  class Topology {
+    - levels_: Level[]
+    - network_: Network
+    + GetLevel(): Level
+    + GetNumLevels(): int
+  }
+  
+  class Level {
+    - specs_: Specs
+    - buffer_: Buffer
+    - arithmetic_: Arithmetic
+    - network_: Network
+    + Evaluate()
+    + GetStats()
+  }
+  
+  class Buffer {
+    - size_: uint64_t
+    - instances_: uint64_t
+    + Read(): Energy
+    + Write(): Energy
+    + GetCapacity(): uint64_t
+  }
+  
+  class Arithmetic {
+    - instances_: uint64_t
+    - word_bits_: uint32_t
+    + Compute(): Energy
+    + GetMACs(): uint64_t
+  }
+  
+  abstract class Network {
+    # specs_: Specs
+    + {abstract} Multicast()
+    + {abstract} GetEnergy()
+  }
+  
+  class NetworkLegacy extends Network
+  class NetworkMulticast extends Network
+  class NetworkReductionTree extends Network
+}
+
+package "workload" {
+  class Workload {
+    - shape_: ProblemShape
+    - data_spaces_: DataSpace[]
+    - operation_space_: OperationSpace
+    + GetShape(): ProblemShape
+    + GetBounds()
+  }
+  
+  class ProblemShape {
+    - dimensions_: Dimension[]
+    - coefficients_: map
+    + GetDimensions()
+    + GetBounds()
+  }
+  
+  class DataSpace {
+    - name_: string
+    - rank_: int
+    - projection_: vector
+    + GetVolume()
+    + GetSize()
+  }
+  
+  package "sparse" {
+    class DensityDistribution {
+      + GetDensity(): double
+    }
+    
+    class MetadataFormat {
+      + GetMetadataSize()
+      + GetPayloadSize()
+    }
+  }
+}
+
+package "mapping" {
+  class Mapping {
+    - loop_nest_: Nest
+    - constraints_: Constraints
+    + GetLoop(): Loop
+    + Validate(): bool
+  }
+  
+  class Nest {
+    - loops_: Loop[]
+    - storage_tiling_: Tiling
+    + GetDepth(): int
+    + GetLoops(): Loop[]
+  }
+  
+  class Loop {
+    - spacetime_: SpaceTimeType
+    - dimension_: string
+    - start_: int
+    - end_: int
+    + IsSpatial(): bool
+    + IsTemporal(): bool
+  }
+  
+  class Constraints {
+    - permutation_: Permutation
+    - spatial_: Spatial
+    - temporal_: Temporal
+    + Check(): bool
+    + Validate(): bool
+  }
+  
+  class ArchProperties {
+    - num_levels_: int
+    - spatial_sizes_: map
+    + GetLevel()
+    + GetSpatialSize()
+  }
+}
+
+package "search" {
+  abstract class SearchAlgorithm {
+    # mapspace_: MapSpace*
+    # best_mapping_: Mapping
+    + {abstract} Next(): Mapping
+    + {abstract} Search()
+    + GetBestMapping(): Mapping
+  }
+  
+  class Exhaustive extends SearchAlgorithm {
+    + Next(): Mapping
+    + Search()
+  }
+  
+  class Random extends SearchAlgorithm {
+    + Next(): Mapping
+    + Search()
+  }
+  
+  class RandomPruned extends SearchAlgorithm {
+    - max_permutations_: int
+    + Next(): Mapping
+    + Search()
+  }
+  
+  class LinearPruned extends SearchAlgorithm {
+    + Next(): Mapping
+    + Search()
+  }
+  
+  class Hybrid extends SearchAlgorithm {
+    + Next(): Mapping
+    + Search()
+  }
+  
+  class MapSpace {
+    - arch_props_: ArchProperties
+    - constraints_: Constraints
+    + ConstructMapSpace()
+    + GetSize(): uint128_t
+  }
+}
+
+package "loop-analysis" {
+  class NestAnalysis {
+    - tiling_: Tiling
+    - temporal_analysis_: TemporalAnalysis
+    - spatial_analysis_: SpatialAnalysis
+    + Evaluate()
+    + GetStats()
+  }
+  
+  class Tiling {
+    - tile_info_: TileInfo[]
+    + ComputeTiles()
+    + GetPartitionSize()
+  }
+  
+  class TemporalAnalysis {
+    + AnalyzeLoop()
+    + ComputeAccesses()
+  }
+  
+  class SpatialAnalysis {
+    + AnalyzeDataflow()
+    + ComputeMulticast()
+  }
+  
+  class ISLAnalysis {
+    - isl_ctx_: isl_ctx*
+    + Polyhedral Analysis()
+    + BoundsInference()
+  }
+}
+
+' Relationships
+MapperApplication "1" *-- "1" Engine : evaluates
+MapperApplication "1" *-- "1..*" SearchAlgorithm : uses
+MapperApplication "1" *-- "1" MapSpace : explores
+MapperApplication "1" *-- "1" Workload : processes
+
+ModelApplication "1" *-- "1" Engine : uses
+ModelApplication "1" *-- "1" Mapping : evaluates
+ModelApplication "1" *-- "1" Workload : for
+
+Engine "1" *-- "1" Topology : contains
+Engine "1" *-- "1" NestAnalysis : uses
+Topology "1" *-- "1..*" Level : hierarchical
+Level "1" *-- "0..1" Buffer : has
+Level "1" *-- "0..1" Arithmetic : has
+Level "1" *-- "0..1" Network : has
+
+SearchAlgorithm "1" *-- "1" MapSpace : searches
+SearchAlgorithm ..> Mapping : produces
+MapSpace "1" *-- "1" ArchProperties : uses
+MapSpace "1" *-- "1" Constraints : validates
+
+Mapping "1" *-- "1" Nest : contains
+Nest "1" *-- "1..*" Loop : sequence
+Mapping "1" *-- "1" Constraints : validated by
+
+NestAnalysis ..> Mapping : analyzes
+NestAnalysis ..> Workload : for
+NestAnalysis "1" *-- "1" Tiling : uses
+NestAnalysis "1" *-- "1" TemporalAnalysis : uses
+NestAnalysis "1" *-- "1" SpatialAnalysis : uses
+NestAnalysis ..> ISLAnalysis : may use
+
+Workload "1" *-- "1" ProblemShape : defines
+Workload "1" *-- "1..*" DataSpace : defines
+Workload ..> DensityDistribution : may have
+Workload ..> MetadataFormat : may have
+
+note top of MapperApplication
+  Main entry point for mapping search.
+  Manages multi-threaded exploration
+  of the mapping space.
+end note
+
+note right of Engine
+  Core evaluation engine.
+  Computes energy, performance,
+  and area for a given mapping.
+end note
+
+note bottom of SearchAlgorithm
+  Various search strategies to
+  explore the mapping space
+  efficiently.
+end note
+
+note left of Workload
+  Problem specification including
+  tensor dimensions, operations,
+  and optional sparsity.
+end note
+
+@enduml

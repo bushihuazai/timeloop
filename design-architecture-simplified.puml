@@ -1,0 +1,161 @@
+@startuml Timeloop Simplified Architecture
+
+!theme plain
+skinparam packageStyle rectangle
+skinparam linetype ortho
+
+title Timeloop - High-Level Architecture and Data Flow
+
+' Define colors for different layers
+skinparam package {
+  BackgroundColor<<Input>> LightYellow
+  BackgroundColor<<Core>> LightBlue
+  BackgroundColor<<Output>> LightGreen
+}
+
+package "Input Specification" <<Input>> {
+  component [Workload\nDescription] as Workload {
+    database "Problem\nShape" as Problem
+    database "Tensor\nDimensions" as Tensors
+    database "Sparsity\nModel" as Sparsity
+  }
+  
+  component [Architecture\nSpecification] as Architecture {
+    database "Topology" as Topology
+    database "Storage\nHierarchy" as Storage
+    database "Compute\nUnits" as Compute
+    database "Network" as Network
+  }
+  
+  component [Constraints] as Constraints {
+    database "Mapping\nRules" as Rules
+    database "Resource\nLimits" as Limits
+  }
+}
+
+package "Core Engine" <<Core>> {
+  
+  component "Mapper" as Mapper {
+    [Search\nAlgorithm] as Search
+    [MapSpace\nGenerator] as MapSpace
+    [Multi-threaded\nExplorer] as Threads
+  }
+  
+  component "Model Engine" as Engine {
+    [Nest\nAnalysis] as Analysis
+    [Loop\nAnalysis] as LoopAnalysis
+    [Performance\nModel] as PerfModel
+    [Energy\nModel] as EnergyModel
+  }
+  
+  component [Mapping\nRepresentation] as Mapping {
+    database "Loop\nNest" as Nest
+    database "Spatial/Temporal\nPartition" as Partition
+    database "Data\nPlacement" as Placement
+  }
+}
+
+package "Output Results" <<Output>> {
+  component [Statistics] as Stats {
+    file "Energy\nConsumption" as Energy
+    file "Execution\nTime" as Time
+    file "Memory\nAccesses" as Memory
+  }
+  
+  component [Optimized\nMapping] as OptMapping {
+    file "Loop\nOrder" as LoopOrder
+    file "Tiling\nStrategy" as Tiling
+    file "Parallelization" as Parallel
+  }
+  
+  component [Code\nGeneration] as CodeGen {
+    file "Tensella\nOutput" as Tensella
+    file "Configuration\nFiles" as Config
+  }
+}
+
+' Main workflow connections
+Workload --> Mapper : Problem\nDefinition
+Architecture --> Mapper : Hardware\nModel
+Constraints --> Mapper : Rules &\nLimits
+
+Mapper --> MapSpace : Generate\nSearch Space
+MapSpace --> Search : Explore
+Search --> Threads : Distribute
+
+Threads --> Mapping : Candidate\nMappings
+Mapping --> Engine : Evaluate
+
+Engine --> Analysis : Analyze\nNest
+Analysis --> LoopAnalysis : Tiling &\nBounds
+LoopAnalysis --> PerfModel : Performance
+LoopAnalysis --> EnergyModel : Energy
+
+PerfModel --> Stats : Metrics
+EnergyModel --> Stats : Metrics
+Mapping --> OptMapping : Best\nMapping
+
+Engine --> Stats : Results
+Mapper --> OptMapping : Optimal\nSolution
+OptMapping --> CodeGen : Generate
+
+' Architecture flow to Engine
+Architecture --> Engine : Hardware\nConfiguration
+Workload --> Engine : Problem\nParameters
+
+' Feedback loops
+Stats ..> Mapper : Optimization\nFeedback
+Engine ..> Mapper : Validation\nFeedback
+
+note right of Mapper
+  **Search Algorithms:**
+  - Exhaustive
+  - Random
+  - Random Pruned
+  - Linear Pruned
+  - Hybrid (default)
+  
+  **Optimization Metrics:**
+  - Energy
+  - Delay
+  - EDP (Energy-Delay Product)
+  - Memory Accesses
+end note
+
+note right of Engine
+  **Analysis Components:**
+  - Temporal analysis
+  - Spatial analysis
+  - Tiling analysis
+  - ISL polyhedral analysis
+  - Sparse optimization
+  
+  **Models:**
+  - Energy: storage + compute + network
+  - Performance: cycles, utilization
+  - Area: hardware footprint
+end note
+
+note bottom of Workload
+  **Workload Types:**
+  - Dense tensor algebra
+  - Sparse tensor algebra
+  - CNN layers
+  - Transformer layers
+  - Custom operations
+end note
+
+note bottom of Architecture
+  **Architecture Types:**
+  - Multi-level storage hierarchy
+  - Spatial arrays
+  - Systolic arrays
+  - Custom accelerators
+  
+  **Supported Levels:**
+  - DRAM, SRAM, RegFile
+  - MAC arrays
+  - Various network topologies
+end note
+
+@enduml

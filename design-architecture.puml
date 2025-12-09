@@ -1,0 +1,256 @@
+@startuml Timeloop Architecture Design
+
+!define COMPONENT_COLOR #E8F5E9
+!define APPLICATION_COLOR #FFF3E0
+!define MODEL_COLOR #E3F2FD
+!define WORKLOAD_COLOR #F3E5F5
+!define MAPPING_COLOR #FCE4EC
+!define SEARCH_COLOR #FFF9C4
+!define ANALYSIS_COLOR #E0F2F1
+
+title Timeloop - Tensor Algebra Accelerator Infrastructure\nDesign Framework
+
+package "Application Layer" <<Rectangle>> #APPLICATION_COLOR {
+  [Mapper Application] as MapperApp
+  [Model Application] as ModelApp
+  [Metrics Application] as MetricsApp
+  [SimpleMapper] as SimpleMapper
+  [DesignSpace Explorer] as DesignSpace
+  
+  note right of MapperApp
+    Main mapping search application
+    - Multi-threaded search
+    - Optimization metrics (energy, delay, EDP)
+  end note
+}
+
+package "Workload Description" <<Rectangle>> #WORKLOAD_COLOR {
+  [Workload] as Workload
+  [ProblemShape] as ProblemShape
+  [DataSpace] as DataSpace
+  [OperationSpace] as OperationSpace
+  
+  package "Sparse Support" {
+    [DensityModels] as DensityModels
+    [MetadataFormats] as MetadataFormats
+  }
+  
+  note right of Workload
+    Tensor algebra workload specification
+    - Problem dimensions
+    - Data spaces (Input/Output tensors)
+    - Operation types
+    - Sparsity models
+  end note
+}
+
+package "Architecture Model" <<Rectangle>> #MODEL_COLOR {
+  [Engine] as Engine
+  [Topology] as Topology
+  
+  package "Storage Hierarchy" {
+    [Buffer] as Buffer
+    [Level] as Level
+  }
+  
+  package "Compute Units" {
+    [Arithmetic] as Arithmetic
+  }
+  
+  package "Interconnect" {
+    [Network] as Network
+    [NetworkLegacy] as NetworkLegacy
+    [NetworkMulticast] as NetworkMulticast
+    [NetworkReductionTree] as NetworkReductionTree
+  }
+  
+  note right of Engine
+    Hardware architecture model
+    - Storage hierarchy (DRAM, SRAM, RegFile)
+    - Compute units (MAC arrays)
+    - Interconnection networks
+    - Energy/area/timing models
+  end note
+}
+
+package "Mapping Representation" <<Rectangle>> #MAPPING_COLOR {
+  [Mapping] as Mapping
+  [Nest] as Nest
+  [Loop] as Loop
+  [SpaceTime] as SpaceTime
+  [Constraints] as Constraints
+  [ArchProperties] as ArchProperties
+  
+  note right of Mapping
+    Mapping of workload to architecture
+    - Loop nest structure
+    - Spatial/temporal partitioning
+    - Data placement
+    - Constraints validation
+  end note
+}
+
+package "Mapping Search" <<Rectangle>> #SEARCH_COLOR {
+  [SearchAlgorithm] as SearchAlgorithm
+  [Exhaustive] as Exhaustive
+  [Random] as Random
+  [RandomPruned] as RandomPruned
+  [LinearPruned] as LinearPruned
+  [Hybrid] as Hybrid
+  [MapSpace] as MapSpace
+  
+  note right of SearchAlgorithm
+    Mapping space exploration
+    - Exhaustive search
+    - Random sampling
+    - Hybrid heuristics
+    - Multi-threaded search
+  end note
+}
+
+package "Analysis and Evaluation" <<Rectangle>> #ANALYSIS_COLOR {
+  [NestAnalysis] as NestAnalysis
+  [LoopAnalysis] as LoopAnalysis
+  
+  package "Analysis Components" {
+    [Tiling] as Tiling
+    [TemporalAnalysis] as TemporalAnalysis
+    [SpatialAnalysis] as SpatialAnalysis
+    [BoundsInference] as BoundsInference
+    [TileInfo] as TileInfo
+  }
+  
+  package "ISL Integration" {
+    [ISLWrapper] as ISLWrapper
+    [ISLAnalysis] as ISLAnalysis
+  }
+  
+  package "Sparse Analysis" {
+    [SparseOptimizationInfo] as SparseOptimizationInfo
+    [SparseAnalysis] as SparseAnalysis
+  }
+  
+  note right of NestAnalysis
+    Loop nest analysis and evaluation
+    - Tiling analysis
+    - Data movement calculation
+    - Temporal/spatial analysis
+    - ISL-based polyhedral analysis
+    - Sparse optimization
+  end note
+}
+
+package "Support Libraries" <<Rectangle>> #COMPONENT_COLOR {
+  [CompoundConfig] as CompoundConfig
+  [Layout] as Layout
+  [EinsumGraph] as EinsumGraph
+  [Utilities] as Utilities
+  
+  note right of CompoundConfig
+    Configuration management
+    - YAML parsing
+    - Hierarchical config
+  end note
+}
+
+' Application Layer connections
+MapperApp --> SearchAlgorithm : uses
+MapperApp --> Engine : evaluates on
+MapperApp --> Workload : for
+MapperApp --> MapSpace : explores
+MapperApp --> Mapping : generates
+
+ModelApp --> Engine : evaluates
+ModelApp --> Mapping : given
+ModelApp --> Workload : for
+
+MetricsApp --> Engine : analyzes
+DesignSpace --> Engine : explores
+
+' Search connections
+SearchAlgorithm <|-- Exhaustive
+SearchAlgorithm <|-- Random
+SearchAlgorithm <|-- RandomPruned
+SearchAlgorithm <|-- LinearPruned
+SearchAlgorithm <|-- Hybrid
+
+SearchAlgorithm --> MapSpace : searches
+SearchAlgorithm --> Mapping : produces
+SearchAlgorithm --> Constraints : respects
+
+MapSpace --> ArchProperties : constrained by
+MapSpace --> Constraints : validated by
+
+' Architecture Model connections
+Engine --> Topology : contains
+Topology --> Level : hierarchical
+Level --> Buffer : storage
+Level --> Arithmetic : compute
+Level --> Network : interconnect
+
+Network <|-- NetworkLegacy
+Network <|-- NetworkMulticast
+Network <|-- NetworkReductionTree
+
+' Mapping connections
+Mapping --> Nest : contains
+Nest --> Loop : sequence of
+Loop --> SpaceTime : spatial/temporal
+Mapping --> Constraints : validated by
+Mapping --> ArchProperties : maps to
+
+' Analysis connections
+Engine --> NestAnalysis : uses
+NestAnalysis --> Mapping : analyzes
+NestAnalysis --> Workload : for
+NestAnalysis --> Tiling : performs
+NestAnalysis --> TemporalAnalysis : performs
+NestAnalysis --> SpatialAnalysis : performs
+NestAnalysis --> ISLAnalysis : uses
+NestAnalysis --> SparseAnalysis : uses
+
+LoopAnalysis --> Tiling : includes
+LoopAnalysis --> BoundsInference : includes
+LoopAnalysis --> TileInfo : produces
+ISLAnalysis --> ISLWrapper : uses
+
+SparseAnalysis --> SparseOptimizationInfo : uses
+SparseOptimizationInfo --> DensityModels : configures
+SparseOptimizationInfo --> MetadataFormats : configures
+
+' Workload connections
+Workload --> ProblemShape : defines
+Workload --> DataSpace : defines
+Workload --> OperationSpace : defines
+Workload --> DensityModels : may have
+Workload --> MetadataFormats : may have
+
+' Config connections
+MapperApp --> CompoundConfig : reads
+ModelApp --> CompoundConfig : reads
+Engine --> CompoundConfig : configured by
+Mapping --> CompoundConfig : configured by
+
+' Layout connections
+Engine --> Layout : uses
+NestAnalysis --> Layout : considers
+
+' Main Data Flow
+note bottom
+  **Main Workflow:**
+  1. Define Workload (problem specification)
+  2. Specify Architecture (hardware model)
+  3. Search for optimal Mapping (mapper)
+  4. Analyze and Evaluate (performance/energy)
+  5. Generate code or statistics (output)
+  
+  **Key Features:**
+  - Dense and sparse tensor algebra support
+  - Multi-level memory hierarchy modeling
+  - Flexible interconnection network models
+  - Multiple search heuristics
+  - Energy and performance co-optimization
+  - ISL-based polyhedral analysis
+end note
+
+@enduml
